@@ -1,4 +1,5 @@
 import sqlite3
+import pandas as pd
 
 class DBManager:
     def __init__(self, path: str) -> None:
@@ -17,7 +18,7 @@ class DBManager:
         )
     
     def read(self, query: str) -> str:
-        return self.cur.execute(f"{query}").fetchall()
+        return pd.DataFrame(self.cur.execute(f"{query}").fetchall())
  
     def __del__(self) -> None:
         self.conn.commit()
