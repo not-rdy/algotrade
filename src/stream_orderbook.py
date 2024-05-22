@@ -1,12 +1,18 @@
 import os
+from utils import OrderToDict
+from dbmanager import DBManager
 from tinkoff.invest import (
     OrderBookInstrument,
     Client,
     InfoInstrument
 )
+from tinkoff.invest.utils import now
 from tinkoff.invest.services import MarketDataStreamManager
 
 TOKEN = os.environ["TOKEN"]
+DB_PATH = os.path.join(os.getcwd(), 'data', 'db', 'db.db')
+
+db = DBManager(path=DB_PATH)
 
 def main():
 
@@ -25,7 +31,21 @@ def main():
             if marketdata.orderbook is None:
                 continue
             market_data_stream.info.subscribe([InfoInstrument(instrument_id="BBG004730N88")])
+            ts = str(now())
+            bids = [OrderToDict(order) for order in marketdata.orderbook.bids]
+            asks = [OrderToDict(order) for order in marketdata.orderbook.asks]
+            for b, a in zip(bids, asks):
+                db.write_row(
+                    data={
+                        'ts': ts,
+                        'bprice': b['price'], 'bquantity': b['quantity'],
+                        'aprice': a['price'], 'aquantity': a['quantity']
+                    },
+                    table='ob'
+                )
+
             print(marketdata.orderbook)
+            print(' ')
 
 
 if __name__ == "__main__":

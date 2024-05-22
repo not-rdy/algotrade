@@ -3,8 +3,8 @@ from typing import Dict
 from tinkoff.invest import Order, Quotation
 from tinkoff.invest.utils import quotation_to_decimal
 
-def OrderToDict(order: Order, side: str) -> Dict[float, int]:
-    return {f'{side}_price': float(quotation_to_decimal(order.price)), f'{side}_quantity': order.quantity}
+def OrderToDict(order: Order) -> Dict[float, int]:
+    return {'price': float(quotation_to_decimal(order.price)), 'quantity': order.quantity}
 
 def save(obj, path):
     with open(path, 'wb') as obj_file:
