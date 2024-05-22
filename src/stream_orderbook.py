@@ -10,7 +10,7 @@ from tinkoff.invest.utils import now
 from tinkoff.invest.services import MarketDataStreamManager
 
 TOKEN = os.environ["TOKEN"]
-DB_PATH = os.path.join(os.getcwd(), 'data', 'db', 'db.db')
+DB_PATH = os.path.join(os.getcwd(), 'data', 'db', 'ob.db')
 
 db = DBManager(path=DB_PATH)
 

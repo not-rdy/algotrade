@@ -1,13 +1,15 @@
 import os
 import sqlite3
 
-PATH = os.path.join(os.getcwd(), 'data', 'db', 'db.db')
+PATH_OB = os.path.join(os.getcwd(), 'data', 'db', 'ob.db')
+PATH_TR = os.path.join(os.getcwd(), 'data', 'db', 'tr.db')
 
 # creating an database
-conn = sqlite3.connect(PATH)
-cursor = conn.cursor()
+conn_ob = sqlite3.connect(PATH_OB)
+conn_tr = sqlite3.connect(PATH_TR)
 # creating a orderbook table
-cursor.execute(
+cursor_ob = conn_ob.cursor()
+cursor_ob.execute(
     """
     CREATE TABLE IF NOT EXISTS
         ob (
@@ -19,9 +21,10 @@ cursor.execute(
         )
     """
 )
-conn.commit()
+conn_ob.commit()
 # creating an trades table
-cursor.execute(
+cursor_tr = conn_tr.cursor()
+cursor_tr.execute(
     """
     CREATE TABLE IF NOT EXISTS
         tr (
@@ -32,6 +35,7 @@ cursor.execute(
         )
     """
 )
-conn.commit()
+conn_tr.commit()
 # close
-conn.close()
+conn_ob.close()
+conn_tr.close()
