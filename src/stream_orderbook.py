@@ -31,7 +31,7 @@ def main():
             if marketdata.orderbook is None:
                 continue
             market_data_stream.info.subscribe([InfoInstrument(instrument_id="BBG004730N88")])
-            ts = str(now())
+            ts = str(marketdata.orderbook.time)
             bids = [OrderToDict(order) for order in marketdata.orderbook.bids]
             asks = [OrderToDict(order) for order in marketdata.orderbook.asks]
             for b, a in zip(bids, asks):
