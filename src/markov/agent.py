@@ -2,14 +2,14 @@ import os
 import sys
 sys.path.append(os.getcwd())
 import numpy as np
+import pandas as pd
 import scipy as sp
 import itertools
-from tqdm import tqdm
 from sklearn.neighbors import NearestNeighbors
 from typing import Set, Dict, Tuple, NewType
 
 State = NewType('State', tuple)
-Action = NewType('Action', Tuple[str, float])
+Action = NewType('Action', Tuple[str, float, float])
 Reward = NewType('Reward', float)
 StateAction = NewType('StateAction', Tuple[int, int])
 MatrixStateReward = NewType('MatrixStateReward', np.array)
@@ -19,11 +19,8 @@ class Agent:
  
     def __init__(
             self,
-            states: Set[State], actions: Set[Action], rewards: Set[Reward],
-            n_init_counts: int, eps: float) -> None:
+            states: Set[State], actions: Set[Action], rewards: Set[Reward], history_path: str) -> None:
         
-        self.n: int = n_init_counts
-        self.eps: float = eps
         self.states: Set[State] = states
         self.actions: Set[Action] = actions
         self.rewards = np.array(rewards)
@@ -39,7 +36,7 @@ class Agent:
         self.history = []
         self.total_counts = 0
         self.counts: Dict[StateAction, MatrixStateReward] = self.__init_counts()
-        self.probs: Dict[StateAction, MatrixStateReward] = self.__init_probs()
+        self.probs: Dict[StateAction, MatrixStateReward] = self.counts.copy()
 
         # possible agent states: free, long, short
         self.agent_state = 'free'
@@ -47,41 +44,32 @@ class Agent:
         self.last_state: State = None
         self.last_action: Action = None
         
+        self.history_path = history_path
+        
         self.nbrs = NearestNeighbors(n_neighbors=1, algorithm='ball_tree')\
             .fit(np.array(list(self.states_encoder.keys())))
+
+    def release(self) -> None:
+        self.agent_state = 'free'
+        self.last_state = None
+        self.last_action = None
     
     def __init_counts(self) -> Dict[StateAction, MatrixStateReward]:
         print('init counts...')
         counts = {}
         for sa in self.states_actions:
-            row_indices = np.random.randint(low=0, high=len(self.states), size=self.n)
-            col_indices = np.random.randint(low=0, high=len(self.rewards), size=self.n)
-            data = np.random.randint(low=0, high=2, size=self.n)
-            sparse_matrix = sp.sparse.coo_array(
-                (data, (row_indices, col_indices)),
-                shape=(len(self.states), len(self.rewards)))
-            self.total_counts += sparse_matrix.sum()
+            sparse_matrix = sp.sparse.coo_array((len(self.states), len(self.rewards)))
             counts.update({sa: sparse_matrix}) 
         return counts
-        
-    def __init_probs(self) -> Dict[StateAction, MatrixStateReward]:
-        print('init probs...')
-        probs = {}
-        total_count = 0
-        for m in self.counts.values():
-            total_count += m.sum()
-        for sa, m in self.counts.items():
-            probs.update({sa: m / total_count})
-        return probs
-    
+         
     def __update(self, state: State, reward: Reward) -> None:
-        # update counts
-        if self.last_action is None or self.last_state is None:
+        if reward == 0 or self.last_action is None or self.last_state is None:
             return None
+        # update counts
         idx_last_state = self.states_encoder.get(self.last_state)
         idx_last_action = self.actions_encoder.get(self.last_action)
         idx_new_state = self.states_encoder.get(state)
-        idx_reward = self.rewards_encoder.get(round(reward, 2))
+        idx_reward = self.rewards_encoder.get(reward)
         self.counts[(idx_last_state, idx_last_action)].tolil()[idx_new_state, idx_reward] += 1
         self.total_counts += 1
         # update probs
@@ -99,9 +87,11 @@ class Agent:
             expected_rewards.update({action: me_reward})
         return expected_rewards
     
-    def __choose_action(self, state: State) -> Action:
+    def __choose_action(self, state: State, eps: float) -> Action:
+        if self.agent_state != 'free':
+            return ('none', 0, 0)
         expected_rewards = self.__get_expected_rewards(state)
-        exploitation = np.random.choice(a=[True, False], p=[1-self.eps, self.eps])
+        exploitation = np.random.choice(a=[True, False], p=[1-eps, eps])
         if exploitation:
             return max(expected_rewards)
         else:
@@ -126,19 +116,18 @@ class Agent:
         return self.states_decoder.get(idx_nearest_state.item())
     
     def __append_to_history(self, state: State, action: Action, reward: Reward) -> None:
-        self.history.append(
-            {
-                'state': state,
-                'action': action,
-                'reward': reward
-            })
+        if state is not None and action is not None:
+            self.history.append(
+                {
+                    'state': state,
+                    'action': action,
+                    'reward': reward
+                })
 
-    def get_action(self, state: State, reward: Reward) -> Action:
-        if self.agent_state != 'free':
-            return None
+    def get_action(self, state: State, reward: Reward, eps: float) -> Action:
         state = self.__get_nearest_state(state)
         self.__update(state, reward)
-        action = self.__choose_action(state)
+        action = self.__choose_action(state, eps)
         self.__update_agent_state(action, reward)
         self.__append_to_history(state, action, reward)
         self.last_state, self.last_action = state, action

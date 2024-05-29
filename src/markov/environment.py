@@ -15,12 +15,19 @@ class Environment:
     def __init__(
             self,
             depth_ob: int, last_trades: int,
-            trades: pd.DataFrame, orderbooks: pd.DataFrame) -> None:
+            trades: pd.DataFrame, orderbooks: pd.DataFrame, state_length: int) -> None:
         self.depth_ob = depth_ob
         self.last_trades = last_trades
         self.trades = trades
         self.orderbooks = orderbooks
 
+        self.entry_price = None
+        self.entry_action = None
+        self.current_price = None
+
+        self.state_length = state_length
+    
+    def release(self) -> None:
         self.entry_price = None
         self.entry_action = None
         self.current_price = None
@@ -41,24 +48,27 @@ class Environment:
         return ob[cols].values.flatten()
     
     def __update_entry_price_and_action(self, action: Action, agent_state: str) -> None:
-        if agent_state == 'free' and action[0] != 'none':
+        if action[0] != 'none':
             self.entry_price = self.current_price
             self.entry_action = action
     
-    def __deviation(self) -> float:
-            return (self.entry_price - self.current_price) / self.entry_price
+    def __deviation_long(self) -> float:
+            dev = (self.current_price - self.entry_price) / self.entry_price
+            return round(dev, 5)
+    
+    def __deviation_short(self) -> float:
+            dev = (self.entry_price - self.current_price) / self.entry_price
+            return round(dev, 5)
     
     def __get_reward(self, agent_state: str) -> None:
         if agent_state == 'long' and\
-                (self.__deviation() >= self.entry_action[1]\
-                or (self.__deviation() < 0 and abs(self.__deviation()) >= self.entry_action[2])):
-            reward = self.current_price - self.entry_price
-            print(f'Agent state: {agent_state}, Deviation: {self.__deviation()}, Take profit: {self.entry_action[1]}, Stop loss: {self.entry_action[2]}, Reward: {reward}')
+                (self.__deviation_long() >= self.entry_action[1] or self.__deviation_long() <= self.entry_action[2]):
+            reward = round(self.current_price - self.entry_price, 2)
+            print(f'Agent state: {agent_state}, Deviation: {self.__deviation_long()}, Take profit: {self.entry_action[1]}, Stop loss: {self.entry_action[2]}, Reward: {reward}')
         elif agent_state == 'short' and\
-                (self.__deviation() <= self.entry_action[1]\
-                or (self.__deviation() > 0 and self.__deviation() >= self.entry_action[2])):
-            reward = self.entry_price - self.current_price
-            print(f'Agent state: {agent_state}, Deviation: {self.__deviation()}, Take profit: {self.entry_action[1]}, Stop loss: {self.entry_action[2]}, Reward: {reward}')
+                (self.__deviation_short() >= self.entry_action[1] or self.__deviation_short() <= self.entry_action[2]):
+            reward = round(self.entry_price - self.current_price, 2)
+            print(f'Agent state: {agent_state}, Deviation: {self.__deviation_short()}, Take profit: {self.entry_action[1]}, Stop loss: {self.entry_action[2]}, Reward: {reward}')
         else:
             reward = 0
         return reward
@@ -66,10 +76,12 @@ class Environment:
     def get_state_reward(self, ts: datetime, action: Action, agent_state: str) -> Tuple[State, Reward]:
         # state
         embd_tr = self.__get_trades_embd(ts)
-        if embd_tr is None:
-            return None
         embd_ob = self.__get_orderbook_embd(ts)
+        if embd_tr is None or embd_ob is None:
+            return None
         state = tuple(np.concatenate([embd_ob, embd_tr]))
+        if len(state) != self.state_length:
+            return None
         # reward
         self.__update_entry_price_and_action(action, agent_state)
         reward = self.__get_reward(agent_state)
