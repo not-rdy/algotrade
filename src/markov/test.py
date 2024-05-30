@@ -80,9 +80,7 @@ print('Create Rewards ...')
 rewards = [round(x, 2) for x in np.arange(-2.00, 2.01, 0.01)]
 
 print('Init Agent ...')
-agent = Agent(
-    states=states, actions=actions,
-    rewards=rewards, history_path='/Users/rkam/projs/algotrade/data/interim/history.csv')
+agent = Agent(states=states, actions=actions, rewards=rewards)
 
 print('Init Environment ...')
 environment = Environment(
@@ -99,7 +97,8 @@ for epoch in range(1, n_epochs):
     reward_epoch = 0
     for ts in ob['ts'].unique():
         # state reward
-        state_reward = environment.get_state_reward(ts, action, agent.agent_state)
+        state_reward = environment\
+            .get_state_reward(ts, action, agent.agent_state)
         if state_reward is None:
             continue
         else:
