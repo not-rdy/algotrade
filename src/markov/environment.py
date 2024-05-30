@@ -62,6 +62,7 @@ class Environment:
         return round(dev, 5)
 
     def __print_close(
+            self,
             agent_state: str, deviation: float,
             take_profit: float, stop_loss: float, reward: float) -> None:
         string = f"""
@@ -72,16 +73,12 @@ class Environment:
 
     def __get_reward(self, agent_state: str) -> None:
         long, short = (agent_state == 'long'), (agent_state == 'short')
-        long_take_profit = (self.__deviation_long() >= self.entry_action[1])
-        long_stop_loss = (self.__deviation_long() <= self.entry_action[2])
-        short_take_profit = (self.__deviation_short() >= self.entry_action[1])
-        short_stop_loss = (self.__deviation_short() <= self.entry_action[2])
-        if long and (long_take_profit or long_stop_loss):
+        if long and (self.__deviation_long() >= self.entry_action[1] or self.__deviation_long() <= self.entry_action[2]):  # noqa: E501
             reward = round(self.current_price - self.entry_price, 2)
             self.__print_close(
                 agent_state, self.__deviation_long(),
                 self.entry_action[1], self.entry_action[2], reward)
-        elif short and (short_take_profit or short_stop_loss):
+        elif short and (self.__deviation_short() >= self.entry_action[1] or self.__deviation_short() <= self.entry_action[2]):  # noqa: E501
             reward = round(self.entry_price - self.current_price, 2)
             self.__print_close(
                 agent_state, self.__deviation_short(),
@@ -103,6 +100,6 @@ class Environment:
         if len(state) != self.state_length:
             return None
         # reward
-        self.__update_entry_price_and_action(action, agent_state)
+        self.__update_entry_price_and_action(action)
         reward = self.__get_reward(agent_state)
         return tuple([state, reward])
