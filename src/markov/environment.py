@@ -44,7 +44,7 @@ class Environment:
     def __get_orderbook_embd(self, ts: datetime) -> np.array:
         cols = ['bprice', 'bquantity', 'aprice', 'aquantity']
         ob = self.orderbooks[self.orderbooks['ts'] == ts].iloc[:self.depth_ob]
-        ob[cols] = ob[cols].apply(lambda col: col / col.max())
+        ob[cols] = ob[cols].apply(lambda col: col / col.iloc[0])
         return ob[cols].values.flatten()
     
     def __update_entry_price_and_action(self, action: Action, agent_state: str) -> None:
