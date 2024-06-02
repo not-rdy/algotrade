@@ -56,7 +56,7 @@ env = gym.make(
 # Agent
 obs_space_dims = env.observation_space.shape[0]
 action_space_dims = 3
-agent = REINFORCE(obs_space_dims, action_space_dims)
+agent = REINFORCE(obs_space_dims, action_space_dims, 'cpu')
 # Train agent
 epochs = 100
 total_info = []

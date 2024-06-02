@@ -5,7 +5,9 @@ from policy import Policy_Network
 
 class REINFORCE:
 
-    def __init__(self, obs_space_dims: int, action_space_dims: int):
+    def __init__(
+            self,
+            obs_space_dims: int, action_space_dims: int, device: str = 'cpu'):
 
         # Hyperparameters
         self.learning_rate = 1e-3  # Learning rate for policy optimization
@@ -15,12 +17,13 @@ class REINFORCE:
         self.probs = []  # Stores probability values of the sampled action
         self.rewards = []  # Stores the corresponding rewards
 
-        self.net = Policy_Network(obs_space_dims, action_space_dims)
+        self.device = device
+        self.net = Policy_Network(obs_space_dims, action_space_dims, device)
         self.optimizer = torch.optim.Adam(
             self.net.parameters(), lr=self.learning_rate)
 
     def sample_action(self, state: np.ndarray) -> int:
-        state = torch.tensor(np.array([state]))
+        state = torch.tensor(np.array([state])).to(self.device)
         actions_distrib = self.net(state)
         argmax = torch.argmax(actions_distrib)
         self.probs.append(actions_distrib[0][argmax])
@@ -35,7 +38,6 @@ class REINFORCE:
         for R in self.rewards[::-1]:
             running_g = R + self.gamma * running_g
             gs.insert(0, running_g)
-
         deltas = torch.tensor(gs)
 
         loss = 0
