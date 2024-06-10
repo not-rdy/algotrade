@@ -41,44 +41,46 @@ ts_start = orderbook['time'].iloc[0]
 ts_end = ts_start + timedelta(seconds=1)
 bpoint = orderbook['time'].iloc[-1]
 rows = []
-count = orderbook.shape[0]
+tr = pd.DataFrame({
+    'price': [0],
+    'vol': [0],
+    'direction': [0]
+})
+ob = pd.DataFrame({
+    'bprice': [0],
+    'bvol': [0],
+    'aprice': [0],
+    'avol': [0]
+})
 while ts_end <= bpoint:
-    tr = trades[(trades['time'] >= ts_start) & (trades['time'] < ts_end)]
-    ob = orderbook[
+    tmp_trades = trades[
+        (trades['time'] >= ts_start) & (trades['time'] < ts_end)]
+    if not tmp_trades.empty:
+        tr = tmp_trades
+        trades = trades.drop(tmp_trades.index)
+    tmp_orderbook = orderbook[
         (orderbook['time'] >= ts_start) & (orderbook['time'] < ts_end)]
+    if not tmp_orderbook.empty:
+        ob = tmp_orderbook
+        orderbook = orderbook.drop(tmp_orderbook.index)
     ts_start = ts_end
     ts_end += timedelta(seconds=1)
-    if tr.empty:
-        continue
-    else:
-        open = tr['price'].iloc[0]
-        high = tr['price'].max()
-        low = tr['price'].min()
-        close = tr['price'].iloc[-1]
-        volume = tr['vol'].sum()
-    if ob.empty:
-        continue
-    else:
-        feature_mean_bprice = ob['bprice'].mean()
-        feature_mean_bvol = ob['bvol'].mean()
-        feature_mean_aprice = ob['aprice'].mean()
-        feature_mean_avol = ob['avol'].mean()
     row = {
         'time': ts_end,
-        'open': open,
-        'high': high,
-        'low': low,
-        'close': close,
-        'volume': volume,
+        'open': tr['price'].iloc[0],
+        'high': tr['price'].max(),
+        'low': tr['price'].min(),
+        'close': tr['price'].iloc[-1],
+        'volume': tr['vol'].sum(),
         'feature_direction_1': sum([x == 1 for x in tr['direction']]),
         'feature_direction_2': sum([x == 2 for x in tr['direction']]),
-        'feature_mean_bprice': feature_mean_bprice,
-        'feature_mean_bvol': feature_mean_bvol,
-        'feature_mean_aprice': feature_mean_aprice,
-        'feature_mean_avol': feature_mean_avol
+        'feature_mean_bprice': ob['bprice'].mean(),
+        'feature_mean_bvol': ob['bvol'].mean(),
+        'feature_mean_aprice': ob['aprice'].mean(),
+        'feature_mean_avol': ob['avol'].mean()
     }
     rows.append(row)
-    count -= ob.shape[0]
-    print(f'Lines to the end: {count}')
+
+    print(f'Lines to the end: {orderbook.shape[0]}')
 pd.DataFrame(rows).to_csv(
     os.path.join(os.getcwd(), 'data', 'interim', 'dataset.csv'))
