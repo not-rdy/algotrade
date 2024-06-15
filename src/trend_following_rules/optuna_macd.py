@@ -73,7 +73,7 @@ def get_profit(
                 profits.append(price_entry - p - cost)
                 state = 'free'
                 pr.loc[i, 'action'] = 'close_short'
-    return sum(profits)
+    return profits
 
 
 def objective(trial):
@@ -102,8 +102,9 @@ def objective(trial):
         (df[1], n_short, n_long, n_target, eps, sl)
         for df in prices.groupby('date')]
     with Pool(args.n_jobs) as p:
-        profits_day = p.starmap(get_profit, arguments)
-    return np.mean(profits_day), np.var(profits_day)
+        profits = p.starmap(get_profit, arguments)
+        profits = [p for p_day in profits for p in p_day]
+    return np.mean(profits), np.var(profits)
 
 
 if __name__ == '__main__':
