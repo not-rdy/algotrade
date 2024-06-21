@@ -15,4 +15,6 @@ class ExponentialMA:
         i = len(self.prices) - 1
         w = (1 - self.lmbd) * (self.lmbd ** i)
         self.weights = np.append(self.weights, [w])
+        if len(self.prices) < self.n:
+            return None
         return sum(self.weights[::-1] * self.prices)

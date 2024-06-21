@@ -14,7 +14,6 @@ class SimpleMA:
         self.prices.append(price)
         if len(self.prices) != self.n:
             return None
-        else:
-            prices = np.array(self.prices)
-            res = np.sum((self.weights * prices)) / np.sum(self.weights)
-            return res
+        prices = np.array(self.prices)
+        res = np.sum((self.weights * prices)) / np.sum(self.weights)
+        return res
