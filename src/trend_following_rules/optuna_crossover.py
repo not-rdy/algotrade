@@ -28,7 +28,7 @@ def get_profit(pr: pd.DataFrame, cr: CrossoverRule) -> float:
 def objective(trial):
     prices = pd.read_csv(
         os.path.join(
-            os.getcwd(), 'data', 'raw', 'candles_SBER_min.csv'),
+            os.getcwd(), 'data', 'raw', 'candles_SBER.csv'),
         index_col=0)
     prices.columns = ['o', 'h', 'l', 'p', 'v', 't']
     prices['t'] = pd.to_datetime(prices['t'], format='mixed')
@@ -58,7 +58,7 @@ def objective(trial):
         profits = p.starmap(get_profit, arguments)
         profits = [p for p_day in profits for p in p_day]
     if len(profits) == 0:
-        return -1000
+        return -1000000
     else:
         return sum(profits)
 
