@@ -61,6 +61,10 @@ class CrossoverRule:
         else:
             self.__price = data
 
+    def get_content(self) -> None:
+        print(self.ma_short.prices)
+        print(self.ma_long.prices)
+
     def get_signal(
             self, data: Union[MarketDataResponse, float]) -> Union[None, dict]:
         self.__update_price(data)
