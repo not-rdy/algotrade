@@ -6,7 +6,6 @@ import argparse
 from datetime import datetime
 from multiprocessing import Pool
 sys.path.append(os.getcwd())
-from src.dbmanager import DBManager
 from crossover_rule import CrossoverRule
 
 
@@ -27,16 +26,11 @@ def get_profit(pr: pd.DataFrame, cr: CrossoverRule) -> float:
 
 
 def objective(trial):
-    db = DBManager(path=os.path.join(os.getcwd(), 'data', 'db', 'tr.db'))
-    prices = db.read(
-        """
-        select
-            *
-        from
-            tr
-        """
-    )
-    prices.columns = ['t', 'd', 'p', 'v']
+    prices = pd.read_csv(
+        os.path.join(
+            os.getcwd(), 'data', 'raw', 'candles_SBER_min.csv'),
+        index_col=0)
+    prices.columns = ['o', 'h', 'l', 'p', 'v', 't']
     prices['t'] = pd.to_datetime(prices['t'], format='mixed')
     prices['t'] = prices['t'].dt.tz_localize(None)
 
