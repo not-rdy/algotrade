@@ -48,8 +48,7 @@ def objective(trial):
         'window_short': window_short,
         'window_long': window_long,
         'eps': trial.suggest_float('eps', 0.01, 0.5, step=0.01),
-        'sl': trial.suggest_float('sl', -1, -0.1, step=0.01),
-        'tp': trial.suggest_float('tp', 0.2, 1, step=0.01)
+        'sl': trial.suggest_float('sl', -1, -0.1, step=0.01)
     }
     prices['date'] = prices['t'].dt.date
     arguments = [
@@ -59,7 +58,7 @@ def objective(trial):
         profits = p.starmap(get_profit, arguments)
         profits = [p for p_day in profits for p in p_day]
     if len(profits) == 0:
-        return -10
+        return -1000
     else:
         return sum(profits)
 
