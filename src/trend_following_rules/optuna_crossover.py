@@ -10,13 +10,13 @@ from src.dbmanager import DBManager
 from crossover_rule import CrossoverRule
 
 
-def get_profit(pr: pd.DataFrame, params: dict) -> float:
+def get_profit(pr: pd.DataFrame, cr: CrossoverRule) -> float:
+    print(cr.get_content())
     date = pr['t'].dt.date.iloc[0]
     start = datetime(year=date.year, month=date.month, day=date.day, hour=10)  # noqa: E501
     end = datetime(year=date.year, month=date.month, day=date.day, hour=18)
     pr = pr[(pr['t'] >= start) & (pr['t'] <= end)].reset_index(drop=True)
 
-    cr = CrossoverRule(**params)
     deals_profit = []
     for i in range(0, pr.shape[0]):
         p = pr['p'].iloc[i]
@@ -59,7 +59,7 @@ def objective(trial):
     }
     prices['date'] = prices['t'].dt.date
     arguments = [
-        (df[1], params)
+        (df[1], CrossoverRule(**params))
         for df in prices.groupby('date')]
     with Pool(args.n_jobs) as p:
         profits = p.starmap(get_profit, arguments)
