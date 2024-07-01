@@ -6,7 +6,7 @@ from sma import SimpleMA
 from lma import LinearMA
 from ema import ExponentialMA
 from tinkoff.invest import Client, MarketDataResponse
-from tinkoff.invest.utils import quotation_to_decimal
+from utils import price_to_float
 
 
 class CrossoverRule:
@@ -40,7 +40,7 @@ class CrossoverRule:
 
                 if figi in active_figis:
                     pos = [p for p in active_positions if p.figi == figi][0]
-                    quantity = float(quotation_to_decimal(pos.quantity))
+                    quantity = price_to_float(pos.quantity)
                     if quantity > 0:
                         self.__state = 'long'
                     elif quantity < 0:
@@ -48,8 +48,7 @@ class CrossoverRule:
 
     def __update_price(self, data: Union[MarketDataResponse, float]):
         if isinstance(data, MarketDataResponse):
-            self.__price = round(
-                quotation_to_decimal(float(data.candle.close)), 2)
+            self.__price = price_to_float(data.candle.close)
         else:
             self.__price = data
 
