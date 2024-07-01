@@ -12,8 +12,8 @@ from crossover_rule import CrossoverRule
 def get_profit(pr: pd.DataFrame, cr: CrossoverRule) -> float:
     print(cr.get_content())
     date = pr['t'].dt.date.iloc[0]
-    start = datetime(year=date.year, month=date.month, day=date.day, hour=10)  # noqa: E501
-    end = datetime(year=date.year, month=date.month, day=date.day, hour=18)
+    start = datetime(year=date.year, month=date.month, day=date.day, hour=7)  # noqa: E501
+    end = datetime(year=date.year, month=date.month, day=date.day, hour=15)
     pr = pr[(pr['t'] >= start) & (pr['t'] <= end)].reset_index(drop=True)
 
     deals_profit = []
@@ -33,6 +33,7 @@ def objective(trial):
     prices.columns = ['o', 'h', 'l', 'p', 'v', 't']
     prices['t'] = pd.to_datetime(prices['t'], format='mixed')
     prices['t'] = prices['t'].dt.tz_localize(None)
+    prices = prices[~prices['week'].isin([5, 6])].reset_index(drop=True)
 
     # hyperparams
     ma_short_type = trial.suggest_categorical(
@@ -40,9 +41,9 @@ def objective(trial):
     ma_long_type = trial.suggest_categorical(
         'ma_long_type', ['sma', 'lma', 'ema'])
     window_short = trial.suggest_int(
-        'window_short', 100, 1000, step=100)
+        'window_short', 2, 15, step=1)
     window_long = window_short + trial.suggest_int(
-        'long_window_diff', 100, 1000, step=100)
+        'long_window_diff', 2, 15, step=1)
     params = {
         'short_long_ma': [ma_short_type, ma_long_type],
         'window_short': window_short,
