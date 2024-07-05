@@ -26,7 +26,8 @@ class ReturnAvgRule:
             avgprice_quantile_dist: float = None,
             fee: float = 0.04 / 100,
             log_path=None,
-            verbose=True
+            verbose=True,
+            data_type='candles'
     ):
 
         self.figi = figi
@@ -43,6 +44,7 @@ class ReturnAvgRule:
         self.__time = None
         self.__log_path = log_path
         self.__verbose = verbose
+        self.__data_type = data_type
 
         self.profit = 0
 
@@ -67,6 +69,7 @@ class ReturnAvgRule:
                         self.__side = 'short'
 
     def __init_state(self) -> None:
+        self.__bufer = deque(maxlen=self.data_cash_size)
         self.__high_prices = deque(maxlen=self.data_cash_size)
         self.__low_prices = deque(maxlen=self.data_cash_size)
         self.__prices = deque(maxlen=self.data_cash_size)
@@ -84,16 +87,28 @@ class ReturnAvgRule:
         self.__side = None
         return None
 
-    def __update_quantiles(self, data: Union[MarketDataResponse, Tuple[float, float, float]]  # noqa: E501
-                           ) -> None:
+    def __update_quantiles(
+            self,
+            data: Union[MarketDataResponse, Tuple[float, float, float], float]) -> None:  # noqa: E501
+
         self.__time = datetime.now()
 
-        if isinstance(data, MarketDataResponse):
-            self.__high = price_to_float(data.candle.high)
-            self.__low = price_to_float(data.candle.low)
-            self.__price = price_to_float(data.candle.close)
-        else:
-            self.__high, self.__low, self.__price = data
+        if self.__data_type == 'candles':
+            if isinstance(data, MarketDataResponse):
+                self.__high = price_to_float(data.candle.high)
+                self.__low = price_to_float(data.candle.low)
+                self.__price = price_to_float(data.candle.close)
+            else:
+                self.__high, self.__low, self.__price = data
+        if self.__data_type == 'trades':
+            if isinstance(data, MarketDataResponse):
+                self.__price = price_to_float(data.trade)
+            else:
+                self.__price = data
+            self.__bufer.append(self.__price)
+            self.__high = max(self.__bufer)
+            self.__low = min(self.__bufer)
+
         self.__high_prices.append(self.__high)
         self.__low_prices.append(self.__low)
         self.__prices.append(self.__price)
