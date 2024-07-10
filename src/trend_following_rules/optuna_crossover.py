@@ -33,6 +33,7 @@ def objective(trial):
     prices.columns = ['o', 'h', 'l', 'p', 'v', 't']
     prices['t'] = pd.to_datetime(prices['t'], format='mixed')
     prices['t'] = prices['t'].dt.tz_localize(None)
+    prices['week'] = prices['t'].dt.day_of_week
     prices = prices[~prices['week'].isin([5, 6])].reset_index(drop=True)
 
     # hyperparams

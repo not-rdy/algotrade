@@ -6,7 +6,7 @@ from sma import SimpleMA
 from lma import LinearMA
 from ema import ExponentialMA
 from tinkoff.invest import Client, MarketDataResponse
-from utils import price_to_float
+from src.utils import price_to_float
 
 
 class CrossoverRule:
