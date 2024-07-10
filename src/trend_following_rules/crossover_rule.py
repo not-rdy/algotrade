@@ -85,7 +85,7 @@ class CrossoverRule:
                 }
                 print(signal)
                 return signal
-            elif diff <= -self.__eps:
+            elif diff < -self.__eps:
                 self.__state = 'short'
                 self.__entry_price = self.__price
                 self.__main_price = self.__price
@@ -101,7 +101,7 @@ class CrossoverRule:
             deviation = self.__price - self.__main_price
             ma_value_short = self.ma_short.get(self.__price)
             ma_value_long = self.ma_long.get(self.__price)
-            if deviation <= self.__sl or ma_value_long >= ma_value_short:
+            if deviation <= self.__sl or ma_value_long > ma_value_short:
                 cost = self.__price * self.__fee * 2
                 current_profit = self.__price - self.__entry_price - cost
                 self.__profit += current_profit
@@ -119,7 +119,7 @@ class CrossoverRule:
             deviation = self.__main_price - self.__price
             ma_value_short = self.ma_short.get(self.__price)
             ma_value_long = self.ma_long.get(self.__price)
-            if deviation <= self.__sl or ma_value_long <= ma_value_short:
+            if deviation <= self.__sl or ma_value_long < ma_value_short:
                 cost = self.__price * self.__fee * 2
                 current_profit = self.__entry_price - self.__price - cost
                 self.__profit += current_profit
