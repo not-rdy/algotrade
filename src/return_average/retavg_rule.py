@@ -173,7 +173,7 @@ class ReturnAvgRule:
             self.__log()
 
         # update main price
-        if self.__side is None:
+        if self.__main_price is None:
             self.__main_price = self.__price
         if self.__side == 'long' and self.__price > self.__main_price:
             self.__main_price = self.__price
