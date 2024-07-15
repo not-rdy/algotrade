@@ -161,6 +161,38 @@ class ReturnAvgRule:
         if qtype == 'high':
             return round(self.__high_quantile - self.__avg, 2)
 
+    def __input_signal(self, side: str) -> dict:
+        self.__side = side
+        self.__entry_price = self.__price
+        self.__main_price = self.__price
+        signal = {
+            'action': 'open', 'side': self.__side,
+            'price': self.__price, 'sl': self.__sl
+        }
+        if self.__verbose:
+            print(signal)
+        return signal
+
+    def __output_signal(self) -> dict:
+        cost = self.__price * self.__fee * 2
+        if self.__side == 'long':
+            profit_current = round(
+                (self.__price - self.__entry_price - cost), 2)
+        elif self.__side == 'short':
+            profit_current = round(
+                (self.__entry_price - self.__price - cost), 2)
+        self.profit += profit_current
+        self.profit = round(self.profit, 2)
+        signal = {
+            'action': 'close', 'side': self.__side,
+            'price': self.__price, 'deviation': self.__deviation(self.__side),
+            'profit_current': profit_current,
+            'profit_total': self.profit
+        }
+        if self.__verbose:
+            print(signal)
+        return signal
+
     def get_content(self) -> None:
         print(self.__prices)
 
@@ -183,65 +215,23 @@ class ReturnAvgRule:
         # enter into a deal
         if self.__side is None and self.__price <= self.__low_quantile\
                 and self.__deviation_quantile('low') >= self.__dist:  # noqa: E501
-            self.__side = 'long'
-            self.__entry_price = self.__price
-            self.__main_price = self.__price
-            signal = {
-                'action': 'open', 'side': self.__side,
-                'price': self.__price, 'sl': self.__sl
-            }
-            if self.__verbose:
-                print(signal)
-            return signal
+            return self.__input_signal(side='long')
         if self.__side is None and self.__price >= self.__high_quantile\
                 and self.__deviation_quantile('high') >= self.__dist:  # noqa: E501
-            self.__side = 'short'
-            self.__entry_price = self.__price
-            self.__main_price = self.__price
-            signal = {
-                'action': 'open', 'side': self.__side,
-                'price': self.__price, 'sl': self.__sl
-            }
-            if self.__verbose:
-                print(signal)
-            return signal
+            return self.__input_signal(side='short')
 
         # out of the deal
         if self.__side == 'long':
-            deviation = self.__deviation(self.__side)
-            if deviation <= self.__sl or self.__price >= self.__avg:
-                cost = self.__price * self.__fee * 2
-                profit_current = round(
-                    (self.__price - self.__entry_price - cost), 2)
-                self.profit += profit_current
-                self.profit = round(self.profit, 2)
-                signal = {
-                    'action': 'close', 'side': self.__side,
-                    'price': self.__price, 'deviation': deviation,
-                    'profit_current': profit_current,
-                    'profit_total': self.profit
-                }
+            if self.__deviation(self.__side) <= self.__sl\
+                    or self.__price >= self.__avg:
+                signal = self.__output_signal()
                 self.__side = None
-                if self.__verbose:
-                    print(signal)
                 return signal
         if self.__side == 'short':
-            deviation = self.__deviation(self.__side)
-            if deviation <= self.__sl or self.__price <= self.__avg:
-                cost = self.__price * self.__fee * 2
-                profit_current = round(
-                    (self.__entry_price - self.__price - cost), 2)
-                self.profit += profit_current
-                self.profit = round(self.profit, 2)
-                signal = {
-                    'action': 'close', 'side': self.__side,
-                    'price': self.__price, 'deviation': deviation,
-                    'profit_current': profit_current,
-                    'profit_total': self.profit
-                }
+            if self.__deviation(self.__side) <= self.__sl\
+                    or self.__price <= self.__avg:
+                signal = self.__output_signal()
                 self.__side = None
-                if self.__verbose:
-                    print(signal)
                 return signal
 
     def reset(self) -> None:
