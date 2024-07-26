@@ -5,6 +5,8 @@ from src.utils import price_to_float
 from typing import Union, Tuple
 from datetime import datetime
 from collections import deque
+from pandas import DataFrame
+from numpy.random import normal
 from numpy import mean, quantile
 from tinkoff.invest import Client, MarketDataResponse
 
@@ -20,6 +22,7 @@ class ReturnAvgRule:
             window_avg: int,
             window_diff_high_avg: int,
             window_diff_avg_low: int,
+            variance: float,
             token: str = None,
             acc_id: str = None,
             figi: str = None,
@@ -38,6 +41,7 @@ class ReturnAvgRule:
         self.window_avg = window_avg
         self.window_diff_high_avg = window_diff_high_avg
         self.window_diff_avg_low = window_diff_avg_low
+        self.variance = variance
         self.__dist = avgprice_quantile_dist
         self.__fee = fee
 
@@ -85,6 +89,12 @@ class ReturnAvgRule:
         self.__entry_price = None
         self.__main_price = None
         self.__side = None
+
+        self.__total_prices = []
+        self.__total_avg = []
+        self.__total_lowq = []
+        self.__total_highq = []
+        self.__total_actions = []
         return None
 
     def __update_quantiles(
@@ -112,17 +122,26 @@ class ReturnAvgRule:
         self.__high_prices.append(self.__high)
         self.__low_prices.append(self.__low)
         self.__prices.append(self.__price)
-        self.__avg = round(mean(list(self.__prices)[-self.window_avg:]), 2)
+        self.__avg = mean(list(self.__prices)[-self.window_avg:])
+        self.__avg += normal(loc=0, scale=self.variance)
+        self.__avg = round(self.__avg, 2)
         self.__diffs_high_avg.append(
             round(max(list(self.__high_prices)[-self.window_diff_high_avg:]) - self.__avg, 2))  # noqa: E501
         self.__diffs_avg_low.append(
             round(self.__avg - min(list(self.__low_prices)[-self.window_diff_avg_low:]), 2))  # noqa: E501
         self.__high_quantile = self.__avg +\
             quantile(self.__diffs_high_avg, q=self.high_q)
+        self.__high_quantile += normal(loc=0, scale=self.variance)
         self.__high_quantile = round(self.__high_quantile, 2)
         self.__low_quantile = self.__avg -\
             quantile(self.__diffs_avg_low, q=self.low_q)
+        self.__low_quantile += normal(loc=0, scale=self.variance)
         self.__low_quantile = round(self.__low_quantile, 2)
+
+        self.__total_prices.append(self.__price)
+        self.__total_avg.append(self.__avg)
+        self.__total_lowq.append(self.__low_quantile)
+        self.__total_highq.append(self.__high_quantile)
         return None
 
     def __log(self) -> None:
@@ -193,8 +212,14 @@ class ReturnAvgRule:
             print(signal)
         return signal
 
-    def get_content(self) -> None:
-        print(self.__prices)
+    def get_content(self) -> DataFrame:
+        return DataFrame({
+            'price': self.__total_prices,
+            'avg': self.__total_avg,
+            'lowq': self.__total_lowq,
+            'highq': self.__total_highq,
+            'action': self.__total_actions
+        })
 
     def get_signal(self, data: Union[MarketDataResponse, Tuple[float, float, float]]  # noqa: E501
                    ) -> Union[None, dict]:
@@ -215,9 +240,11 @@ class ReturnAvgRule:
         # enter into a deal
         if self.__side is None and self.__price <= self.__low_quantile\
                 and self.__deviation_quantile('low') >= self.__dist:  # noqa: E501
+            self.__total_actions.append('open_long')
             return self.__input_signal(side='long')
         if self.__side is None and self.__price >= self.__high_quantile\
                 and self.__deviation_quantile('high') >= self.__dist:  # noqa: E501
+            self.__total_actions.append('open_short')
             return self.__input_signal(side='short')
 
         # out of the deal
@@ -226,14 +253,15 @@ class ReturnAvgRule:
                     or self.__price >= self.__avg:
                 signal = self.__output_signal()
                 self.__side = None
+                self.__total_actions.append('close_long')
                 return signal
         if self.__side == 'short':
             if self.__deviation(self.__side) <= self.__sl\
                     or self.__price <= self.__avg:
                 signal = self.__output_signal()
                 self.__side = None
+                self.__total_actions.append('close_short')
                 return signal
 
-    def reset(self) -> None:
-        self.__init_state()
-        return None
+        # append None action
+        self.__total_actions.append(None)
