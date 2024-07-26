@@ -10,7 +10,6 @@ from retavg_rule import ReturnAvgRule
 
 
 def get_profit(pr: pd.DataFrame, ra: ReturnAvgRule) -> float:
-    print(ra.get_content())
     date = pr['t'].dt.date.iloc[0]
     start = datetime(year=date.year, month=date.month, day=date.day, hour=7)  # noqa: E501
     end = datetime(year=date.year, month=date.month, day=date.day, hour=15)
@@ -39,16 +38,19 @@ def objective(trial):
     # hyperparams
     params = {
         'data_cash_size': 60,
-        'low_q': trial.suggest_float('low_q', 0.7, 1, step=0.1),
-        'high_q': trial.suggest_float('high_q', 0.7, 1, step=0.1),
+        'low_q': trial.suggest_float('low_q', 0.5, 1, step=0.1),
+        'high_q': trial.suggest_float('high_q', 0.5, 1, step=0.1),
         'sl': trial.suggest_float('sl', -1, -0.1, step=0.1),
-        'window_avg': trial.suggest_int('window_avg', 5, 60),
+        'window_avg': trial.suggest_int('window_avg', 2, 60),
         'window_diff_high_avg': trial.suggest_int(
-            'window_diff_high_avg', 5, 60),
+            'window_diff_high_avg', 2, 60),
         'window_diff_avg_low': trial.suggest_int(
-            'window_diff_avg_low', 5, 60),
+            'window_diff_avg_low', 2, 60),
         'avgprice_quantile_dist': trial.suggest_float(
-            'avgprice_quantile_dist', 0.01, 0.5, step=0.01)
+            'avgprice_quantile_dist', 0.01, 0.5, step=0.01),
+        'variance': trial.suggest_float(
+            'variance', 0.01, 0.1, step=0.01),
+        'verbose': False
     }
     prices['date'] = prices['t'].dt.date
     arguments = [
