@@ -21,7 +21,7 @@ async def main():
         market_data_stream.candles.waiting_close().subscribe(
             [
                 CandleInstrument(
-                    figi='BBG004730N88',
+                    figi=FIGI,
                     interval=SubscriptionInterval.SUBSCRIPTION_INTERVAL_ONE_MINUTE  # noqa: E501
                 )
             ]
@@ -34,22 +34,21 @@ async def main():
                 acc.manage_orders_and_sl(signal=signal, quantity=1)
 
         market_data_stream.info.subscribe(
-            [InfoInstrument(figi='BBG004730N88')])
+            [InfoInstrument(figi=FIGI)])
 
 
 if __name__ == "__main__":
 
+    FIGI = 'BBG002W2FT69'
+
     ra = ReturnAvgRule(
         data_cash_size=60,
-        low_q=0.001, high_q=0.001,
-        sl=-0.4, window_avg=60,
-        window_diff_high_avg=60, window_diff_avg_low=60,
-        token=os.getenv('TOKEN'), acc_id=os.getenv('ACCOUNT'),
-        figi='BBG004730N88', avgprice_quantile_dist=0.01
-    )
+        low_q=0.5, high_q=1, sl=-0.8, window_avg=4,
+        window_diff_high_avg=5, window_diff_avg_low=5,
+        variance=0.08, avgprice_quantile_dist=0.16)
     acc = ACCManager(
         token=os.getenv('TOKEN'),
-        figi='BBG004730N88',
+        figi=FIGI,
         id_acc=os.getenv('ACCOUNT'))
 
     asyncio.run(main())

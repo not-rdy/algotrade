@@ -13,7 +13,7 @@ candles = []
 async def main():
     async with AsyncClient(os.getenv('TOKEN')) as client:
         async for candle in client.get_all_candles(
-            instrument_id='BBG004730N88',
+            instrument_id=FIGI,
             from_=now() - timedelta(days=DAYS),
             interval=INTERVAL,
         ):
@@ -29,7 +29,8 @@ if __name__ == "__main__":
 
     DAYS = args.days
     INTERVAL = CandleInterval.CANDLE_INTERVAL_1_MIN
-    NAME = 'candles_SBER_min.csv'
+    FIGI = 'BBG002W2FT69'
+    NAME = 'candles_ABRD_min.csv'
     PATH_PROJ = os.getcwd()
 
     asyncio.run(main())

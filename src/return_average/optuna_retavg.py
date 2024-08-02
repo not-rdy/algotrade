@@ -27,7 +27,7 @@ def get_profit(pr: pd.DataFrame, ra: ReturnAvgRule) -> float:
 def objective(trial):
     prices = pd.read_csv(
         os.path.join(
-            os.getcwd(), 'data', 'raw', 'candles_SBER.csv'),
+            os.getcwd(), 'data', 'raw', CANDLES_NAME),
         index_col=0)
     prices.columns = ['o', 'h', 'l', 'p', 'v', 't']
     prices['t'] = pd.to_datetime(prices['t'], format='mixed')
@@ -66,6 +66,8 @@ def objective(trial):
 
 
 if __name__ == '__main__':
+
+    CANDLES_NAME = 'candles_ABRD_min.csv'
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-n_jobs', type=int)
